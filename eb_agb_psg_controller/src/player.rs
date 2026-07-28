@@ -81,7 +81,7 @@ impl<'track> MusicState<'track> {
         }
     }
 
-    fn current_pattern(&self) -> agb_psg_interop::Pattern {
+    fn current_pattern(&self) -> eb_agb_psg_interop::Pattern {
         let pattern_index = self.track.pattern_order[self.order_pos as usize];
         self.track.patterns[pattern_index as usize]
     }
@@ -713,7 +713,7 @@ fn noise_poly(state: &ChannelState) -> u8 {
 
 /// NRx2 envelope byte with the channel's current volume in place of the
 /// instrument's initial volume.
-fn envelope_with_volume(envelope: &agb_psg_interop::EnvelopeSpec, volume: u8) -> u16 {
+fn envelope_with_volume(envelope: &eb_agb_psg_interop::EnvelopeSpec, volume: u8) -> u16 {
     let mut spec = *envelope;
     spec.initial_volume = volume;
     envelope_bits(&spec)

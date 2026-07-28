@@ -1,39 +1,22 @@
-// a single drop of water falling into standing water.
-//
-// Channel 1 (square + sweep). Chosen over noise for two reasons: a drip is
-// pitched rather than hissy, and the hardware sweep gives the rising tail for
-// free. Keeping it off the noise channel also means it never fights the
-// impact effects, which all live on channel 4.
-//
-// The rising pitch is the point. A drop entrains an air bubble as it hits;
-// the bubble shrinks and its resonance climbs. That upward chirp is what
-// makes this read as water rather than as a generic blip -- a downward sweep
-// sounds like a menu beep. If it reads as too "musical", widen the sweep
-// (lower `shift`) rather than changing the note.
-
 (
     version: 1,
     frames_per_tick: 1.0,
-    ticks_per_row: 2,           // 2 frames ≈ 33 ms per row
-    channel: SquareSweep,
+    ticks_per_row: 2,
+    channel: Wave,
 
     instruments: {
-        "drop": Square(
-            duty: D12_5,              // thinnest pulse available: hollow, glassy
-            envelope: (12, Down, 1),  // 12 × 1/64 s ≈ 0.19 s to silence, free in hardware
-            sweep: Some((2, Up, 5)),  // every 2/128 s shorten the period by 1/32
-                                      // ≈ a 6-semitone rise across the note's life
-            length: None,             // the envelope ends it; no length counter needed
-        ),
+        "drop": Wave(table: "sine", volume: V100),
+    },
+
+    waves: {
+        "sine": "89ACDEEFFFEEDCA97653211000112356",
     },
 
     rows: [
-        "A-6 drop ---",
-        "--- ..   ---",
-        "--- ..   ---",
-        "--- ..   ---",
-        "--- ..   ---",
-        "--- ..   ---",
+        "A-6 drop U06",
+        "--- ..   U0A",
+        "--- ..   M01",
         "off ..   ---",
     ],
 )
+

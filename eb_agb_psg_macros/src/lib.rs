@@ -1,5 +1,5 @@
-//! Proc-macros for `agb_psg_controller`. Use them via that crate's re-exports:
-//! `agb_psg_controller::include_pmus!` and `agb_psg_controller::include_psfx!`.
+//! Proc-macros for `eb_agb_psg_controller`. Use them via that crate's re-exports:
+//! `eb_agb_psg_controller::include_pmus!` and `eb_agb_psg_controller::include_psfx!`.
 
 use proc_macro::TokenStream;
 use quote::quote;

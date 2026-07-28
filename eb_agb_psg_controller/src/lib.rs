@@ -46,8 +46,8 @@ extern crate alloc;
 
 // The macros emit paths through `::eb_agb_psg_controller`, which within this
 // crate's own tests only resolves via this alias.
-#[cfg(test)]
-extern crate self as eb_agb_psg_controller;
+// #[cfg(test)]
+// extern crate self as eb_agb_psg_controller;
 
 pub use eb_agb_psg_interop::{
     EnvelopeSpec, Instrument, NOISE_NOTE_MAX, NOTE_MAX, NOTE_NONE, NOTE_OFF, NUM_CHANNELS, Pattern,
@@ -135,7 +135,7 @@ fn silence_state(state: &mut ChannelState) {
 #[doc(hidden)]
 pub mod __private {
     pub use agb::fixnum::Num;
-    pub use agb_psg_interop;
+    pub use eb_agb_psg_interop;
     pub use alloc::borrow::Cow;
 }
 

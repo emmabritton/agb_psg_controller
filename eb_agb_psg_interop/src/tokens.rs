@@ -1,6 +1,6 @@
 //! `ToTokens` impls that emit the ROM model as Rust source reconstructing it
 //! from `static` data. The generated code resolves its paths through
-//! `agb_psg_controller::__private`, so users only need that crate as a
+//! `eb_agb_psg_controller::__private`, so users only need that crate as a
 //! dependency.
 
 use crate::track::*;
@@ -8,12 +8,12 @@ use proc_macro2::TokenStream;
 use quote::{ToTokens, TokenStreamExt, quote};
 
 fn prefix() -> TokenStream {
-    quote!(::agb_psg_controller::__private)
+    quote!(::eb_agb_psg_controller::__private)
 }
 
 fn interop() -> TokenStream {
     let p = prefix();
-    quote!(#p::agb_psg_interop)
+    quote!(#p::eb_agb_psg_interop)
 }
 
 fn option<T: ToTokens>(value: &Option<T>) -> TokenStream {
