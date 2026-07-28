@@ -1,0 +1,58 @@
+// Example song: a simple two-square-channel melody with wave bass and noise
+// hats (the wave/noise channels become audible once those channels are
+// implemented in the player).
+(
+    version: 1,
+    frames_per_tick: 2.5,
+    ticks_per_row: 4,
+    order: [0, 1],
+    loop_to: Some(0),
+    instruments: {
+        "lead": Square(duty: D50, envelope: (13, Down, 2)),
+        "harm": Square(duty: D25, envelope: (9, Down, 3)),
+        "bass": Wave(table: "tri", volume: V100),
+        "hat": Noise(envelope: (8, Down, 1)),
+        "snare": Noise(envelope: (12, Down, 2)),
+    },
+    waves: {
+        "tri": "159D159D26AE26AE37BF37BF48C048C0",
+    },
+    patterns: [
+        [
+            "--- ..   --- | C-5 lead --- | C-3 bass --- | C-5 hat   ---",
+            "--- ..   --- | --- ..   --- | --- ..  --- | --- ..    ---",
+            "E-4 harm --- | E-5 lead --- | --- ..  --- | C-5 hat   ---",
+            "--- ..   --- | --- ..   --- | --- ..  --- | --- ..    ---",
+            "G-4 harm --- | G-5 lead --- | G-2 bass --- | C-5 snare ---",
+            "--- ..   --- | --- ..   --- | --- ..  --- | --- ..    ---",
+            "E-4 harm --- | E-5 lead --- | --- ..  --- | C-5 hat   ---",
+            "--- ..   --- | off ..   --- | --- ..  --- | --- ..    ---",
+            "--- ..   --- | A-5 lead --- | A-2 bass --- | C-5 hat   ---",
+            "--- ..   --- | --- ..   --- | --- ..  --- | --- ..    ---",
+            "F-4 harm --- | G-5 lead --- | --- ..  --- | C-5 hat   ---",
+            "--- ..   --- | --- ..   --- | --- ..  --- | --- ..    ---",
+            "E-4 harm --- | E-5 lead --- | E-3 bass --- | C-5 snare ---",
+            "--- ..   --- | --- ..   --- | --- ..  --- | --- ..    ---",
+            "D-4 harm --- | D-5 lead --- | --- ..  --- | C-5 hat   ---",
+            "off ..   --- | off ..   --- | off ..  --- | --- ..    ---",
+        ],
+        [
+            "C-4 harm --- | C-5 lead --- | C-3 bass --- | C-5 hat   ---",
+            "--- ..   --- | --- ..   --- | --- ..  --- | --- ..    ---",
+            "--- ..   --- | D-5 lead --- | --- ..  --- | C-5 hat   ---",
+            "--- ..   --- | --- ..   --- | --- ..  --- | --- ..    ---",
+            "B-3 harm --- | D-5 lead --- | G-2 bass --- | C-5 snare ---",
+            "--- ..   --- | --- ..   --- | --- ..  --- | --- ..    ---",
+            "--- ..   --- | B-4 lead --- | --- ..  --- | C-5 hat   ---",
+            "--- ..   --- | --- ..   --- | --- ..  --- | --- ..    ---",
+            "C-4 harm --- | C-5 lead --- | C-3 bass --- | C-5 hat   ---",
+            "--- ..   --- | --- ..   --- | --- ..  --- | --- ..    ---",
+            "--- ..   --- | E-5 lead --- | --- ..  --- | C-5 hat   ---",
+            "--- ..   --- | --- ..   --- | --- ..  --- | --- ..    ---",
+            "G-3 harm --- | G-5 lead --- | G-2 bass --- | C-5 snare ---",
+            "--- ..   --- | --- ..   --- | --- ..  --- | C-5 hat   ---",
+            "--- ..   --- | --- ..   --- | --- ..  --- | C-5 hat   ---",
+            "off ..   --- | off ..   --- | off ..  --- | C-5 snare ---",
+        ],
+    ],
+)

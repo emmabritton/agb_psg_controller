@@ -1,0 +1,94 @@
+name: Rust
+
+on:
+  push:
+    tags:
+      - v*
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+
+  check:
+    runs-on: ubuntu-latest 
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: fmt
+        run: cargo fmt --all -- --check
+      - name: clippy
+        run: cargo clippy -p eb_agb_psg_interop -p eb_agb_psg_format -p eb_agb_psg_macros --features eb_agb_psg_interop/parse,eb_agb_psg_interop/quote --all-targets
+      - name: test
+        run: | 
+          cargo test -p eb_agb_psg_interop --features parse,quote
+          cargo test -p eb_agb_psg_format
+          cargo test -p eb_agb_psg_macros
+
+  publish_format:
+    if: startsWith(github.ref, 'refs/tags/v')
+    name: Publish Format
+    needs: [ check ]
+    runs-on: ubuntu-latest 
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - run: cargo publish --package eb_agb_psg_format --token ${CRATES_TOKEN}
+        env:
+          CRATES_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+
+  publish_interop:
+    if: startsWith(github.ref, 'refs/tags/v')
+    name: Publish Interop
+    needs: [ publish_format ]
+    runs-on: ubuntu-latest 
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - run: cargo publish --package eb_agb_psg_interop --token ${CRATES_TOKEN}
+        env:
+          CRATES_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+
+  publish_macros:
+    if: startsWith(github.ref, 'refs/tags/v')
+    name: Publish Macros
+    needs: [ publish_interop ]
+    runs-on: ubuntu-latest 
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - run: cargo publish --package eb_agb_psg_macros --token ${CRATES_TOKEN}
+        env:
+          CRATES_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+
+  publish_controller:
+    if: startsWith(github.ref, 'refs/tags/v')
+    name: Publish Controller
+    needs: [ publish_macros ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - run: cargo publish --token ${CRATES_TOKEN}
+        working-directory: eb_agb_psg_controller
+        env:
+          CRATES_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}

@@ -1,0 +1,17 @@
+[package]
+name = "eb_agb_psg_macros"
+description = "Proc-macros for agb_psg_controller (include_pmus!, include_psfx!)"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license-file.workspace = true
+repository.workspace = true
+publish = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+eb_agb_psg_interop = { version = "0.25.0", path = "../eb_agb_psg_interop", features = ["quote", "parse"] }
+quote.workspace = true
+syn.workspace = true

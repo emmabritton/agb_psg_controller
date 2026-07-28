@@ -1,0 +1,56 @@
+// the water trap firing: a rush of water, then torches
+// going out.
+//
+// Channel 4 (noise), Long LFSR throughout.
+//
+// Two halves, and the second is what sells it:
+//
+//   RUSH (rows 0-9). A descending run of note-ons. Falling noise pitch is how
+//   you get "a body of water arriving" instead of "static" -- it reads as the
+//   sound moving from spray to volume. Every row after the first uses `..`,
+//   which keeps the channel's current volume, so the hardware envelope's decay
+//   continues uninterrupted across all ten retriggers. Naming the instrument
+//   again would reset it to 15 each row and the whole rush would sit flat.
+//
+//   STEAM (rows 10-18). A named instrument resets the volume, so "steam" comes
+//   in at a much lower level with a slow decay -- quiet, high, sustained. This
+//   is the torches dying, and it is the half that carries the meaning: the
+//   player hears the light go before they read the card.
+//
+// If it lands too comic, shorten the steam tail rather than the rush; the
+// hiss is what can tip into cartoonish.
+
+(
+    version: 1,
+    frames_per_tick: 1.0,
+    ticks_per_row: 3,           // 3 frames ≈ 50 ms per row
+    channel: Noise,
+
+    instruments: {
+        "gush":  Noise(envelope: (15, Down, 3), lfsr: Long),  // 15->0 over ≈ 0.70 s
+        "steam": Noise(envelope: (7,  Down, 6), lfsr: Long),  // 7->0 over ≈ 0.66 s
+    },
+
+    rows: [
+        "B-6 gush  ---",        // impact: brightest, full volume
+        "A#6 ..    ---",
+        "G#6 ..    ---",
+        "F#6 ..    ---",
+        "E-6 ..    ---",
+        "D-6 ..    ---",
+        "C-6 ..    ---",
+        "A-5 ..    ---",
+        "F-5 ..    ---",
+        "D-5 ..    ---",        // rush bottoms out
+        "A-6 steam ---",        // torches: back up high, but quiet
+        "--- ..    ---",
+        "--- ..    ---",
+        "G-6 ..    ---",
+        "--- ..    ---",
+        "--- ..    ---",
+        "F-6 ..    ---",
+        "--- ..    ---",
+        "--- ..    ---",
+        "off ..    ---",
+    ],
+)

@@ -1,0 +1,31 @@
+// Volume effects on channels with no note sounding: 1 frame per tick, 1 tick
+// per row, so one frame == one row.
+//
+// Channel 4 (noise) sets a volume before it has ever played a note, and both
+// pitched channels set one after a note off. Neither may reach hardware:
+// retriggering with no note used to index the noise table at note 0.
+(
+    version: 1,
+    frames_per_tick: 1.0,
+    ticks_per_row: 1,
+    order: [0],
+    loop_to: None,
+    instruments: {
+        "beep": Square(envelope: (12, Down, 0)),
+        "hat": Noise(envelope: (10, Down, 0)),
+    },
+    patterns: [
+        [
+            // row 0: instruments named and volumes set, but no notes anywhere
+            "--- .. --- | --- beep M04 | --- .. --- | --- hat M08",
+            // row 1: both channels play, taking the volumes set above
+            "--- .. --- | C-4 ..   --- | --- .. --- | C-5 ..  ---",
+            // row 2: both stop
+            "--- .. --- | off ..   --- | --- .. --- | off ..   ---",
+            // row 3: volume changes on the now-silent channels
+            "--- .. --- | --- ..   M0F | --- .. --- | --- ..   M02",
+            // row 4: idle, so row 3 is observable before the song ends
+            "--- .. --- | --- ..   --- | --- .. --- | --- ..   ---",
+        ],
+    ],
+)

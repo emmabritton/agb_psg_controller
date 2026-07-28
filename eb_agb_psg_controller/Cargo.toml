@@ -1,0 +1,17 @@
+[package]
+name = "eb_agb_psg_controller"
+description = "Music and sound effect player for the GBA's Programmable Sound Generator"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license-file.workspace = true
+repository.workspace = true
+readme = "../README.md"
+keywords = ["games", "audio", "retro", "gba", "psg"]
+categories = ["games", "no-std"]
+publish = true
+
+[dependencies]
+agb = "0.25.0"
+eb_agb_psg_macros = { version = "0.25.0", path = "../eb_agb_psg_macros" }
+eb_agb_psg_interop = { version = "0.25.0", path = "../eb_agb_psg_interop" }

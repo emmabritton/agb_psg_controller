@@ -1,0 +1,23 @@
+// Deterministic effects test: 1 frame per tick, 4 ticks per row.
+(
+    version: 1,
+    frames_per_tick: 1.0,
+    ticks_per_row: 4,
+    order: [0],
+    loop_to: Some(0),
+    instruments: {
+        "beep": Square(envelope: (12, Down, 0)),
+        "bass": Wave(table: "tri", volume: V100),
+    },
+    waves: {
+        "tri": "0123456789ABCDEFFEDCBA9876543210",
+    },
+    patterns: [
+        [
+            "C-4 beep --- | C-4 beep --- | C-3 bass Q02 | --- .. ---",
+            "--- ..   A30 | --- ..   U02 | --- ..   --- | --- .. ---",
+            "--- ..   --- | --- ..   S02 | --- ..   --- | --- .. ---",
+            "--- ..   --- | --- ..   B00 | --- ..   --- | --- .. ---",
+        ],
+    ],
+)
