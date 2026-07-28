@@ -135,8 +135,8 @@ fn silence_state(state: &mut ChannelState) {
 #[doc(hidden)]
 pub mod __private {
     pub use agb::fixnum::Num;
-    pub use eb_agb_psg_interop;
     pub use alloc::borrow::Cow;
+    pub use eb_agb_psg_interop;
 }
 
 #[cfg(test)]
