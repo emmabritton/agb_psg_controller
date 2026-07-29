@@ -1,0 +1,30 @@
+// Hardware-quirk regressions, 1 frame per tick, 2 ticks per row:
+//
+// - Wave: a note off clears the channel's DAC enable; row 2 replays a note
+//   with the same table (so no wave-RAM upload happens) and must re-enable it.
+// - Square: "pluck" has a length counter and gets a vibrato tick; the period
+//   write must not clear the length-enable bit.
+// - Noise: P02 pans hard left; the panning must not leak into the next song.
+(
+    version: 1,
+    frames_per_tick: 1.0,
+    ticks_per_row: 2,
+    order: [0],
+    loop_to: None,
+    instruments: {
+        "pluck": Square(envelope: (12, Down, 0), length: Some(32)),
+        "organ": Wave(table: "tri", volume: V100),
+        "hat": Noise(envelope: (10, Down, 0)),
+    },
+    waves: {
+        "tri": "0123456789ABCDEFFEDCBA9876543210",
+    },
+    patterns: [
+        [
+            "--- .. --- | C-4 pluck V24 | C-3 organ --- | --- hat P02",
+            "--- .. --- | --- ..    --- | off ..    --- | --- ..  ---",
+            "--- .. --- | --- ..    --- | C-3 ..    --- | --- ..  ---",
+            "--- .. --- | --- ..    --- | --- ..    --- | --- ..  ---",
+        ],
+    ],
+)

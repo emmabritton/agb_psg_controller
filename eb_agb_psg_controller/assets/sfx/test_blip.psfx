@@ -1,0 +1,13 @@
+(
+    version: 1,
+    frames_per_tick: 1.0,
+    ticks_per_row: 2,
+    channel: Square,
+    instruments: {
+        "blip": Square(duty: D25, envelope: (15, Down, 1)),
+    },
+    rows: [
+        "C-6 blip ---",
+        "off ..   ---",
+    ],
+)

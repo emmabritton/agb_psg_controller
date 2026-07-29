@@ -1,0 +1,31 @@
+//! Precomputed pitch tables (no runtime division on the GBA).
+
+/// `NOTE_PERIODS[n - 1]` is the 11-bit hardware period for semitone `n`
+/// (C-2 = 1 … B-9 = 96) on the square channels: `period = 2048 - round(131072 / freq)`
+/// with `freq = 65.40639 * 2^((n - 1) / 12)`.
+///
+/// The wave channel plays an octave lower at the same period, so wave notes are
+/// looked up at `n + WAVE_NOTE_OFFSET`.
+/// `NOISE_TABLE[n - 1]` is the SOUND4CNT_H polynomial byte `(shift << 4) | divisor`
+/// for noise note `n` (1-60), ordered by ascending LFSR clock frequency
+/// (`524288 / r / 2^(s+1)`, with `r = 0.5` for divisor 0) — higher notes sound
+/// brighter. The 112 possible shift/divisor combinations collapse to exactly 60
+/// distinct frequencies.
+pub const NOISE_TABLE: [u8; 60] = [
+    0xD7, 0xD6, 0xD5, 0xD4, 0xC7, 0xC6, 0xC5, 0xC4, 0xB7, 0xB6, 0xB5, 0xB4, // 1-12
+    0xA7, 0xA6, 0xA5, 0xA4, 0x97, 0x96, 0x95, 0x94, 0x87, 0x86, 0x85, 0x84, // 13-24
+    0x77, 0x76, 0x75, 0x74, 0x67, 0x66, 0x65, 0x64, 0x57, 0x56, 0x55, 0x54, // 25-36
+    0x47, 0x46, 0x45, 0x44, 0x37, 0x36, 0x35, 0x34, 0x27, 0x26, 0x25, 0x24, // 37-48
+    0x17, 0x16, 0x15, 0x14, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00, // 49-60
+];
+
+pub const NOTE_PERIODS: [u16; 96] = [
+    44, 157, 263, 363, 457, 547, 631, 711, 786, 856, 923, 986, // octave 2
+    1046, 1102, 1155, 1205, 1253, 1297, 1339, 1379, 1417, 1452, 1486, 1517, // octave 3
+    1547, 1575, 1602, 1627, 1650, 1673, 1694, 1714, 1732, 1750, 1767, 1783, // octave 4
+    1798, 1812, 1825, 1837, 1849, 1860, 1871, 1881, 1890, 1899, 1907, 1915, // octave 5
+    1923, 1930, 1936, 1943, 1949, 1954, 1959, 1964, 1969, 1974, 1978, 1982, // octave 6
+    1985, 1989, 1992, 1995, 1998, 2001, 2004, 2006, 2009, 2011, 2013, 2015, // octave 7
+    2017, 2018, 2020, 2022, 2023, 2025, 2026, 2027, 2028, 2029, 2030, 2031, // octave 8
+    2032, 2033, 2034, 2035, 2036, 2036, 2037, 2038, 2038, 2039, 2039, 2040, // octave 9
+];

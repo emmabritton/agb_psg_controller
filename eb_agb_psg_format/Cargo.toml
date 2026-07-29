@@ -1,0 +1,13 @@
+[package]
+name = "eb_agb_psg_format"
+description = "Data model and RON (de)serialization for the agb_psg_controller song format"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license-file.workspace = true
+repository.workspace = true
+publish = true
+
+[dependencies]
+serde.workspace = true
+ron.workspace = true

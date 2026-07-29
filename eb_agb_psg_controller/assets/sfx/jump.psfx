@@ -1,0 +1,15 @@
+// Rising square blip using the channel-1 hardware sweep.
+(
+    version: 1,
+    frames_per_tick: 1.0,
+    ticks_per_row: 2,
+    channel: SquareSweep,
+    instruments: {
+        "jump": Square(duty: D50, envelope: (13, Down, 2), sweep: Some((2, Up, 3))),
+    },
+    rows: [
+        "C-4 jump ---",
+        "skip 14",
+        "off ..   ---",
+    ],
+)

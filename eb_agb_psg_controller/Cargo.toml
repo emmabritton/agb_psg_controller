@@ -1,0 +1,28 @@
+[package]
+name = "eb_agb_psg_controller"
+description = "Music and sound effect player for the GBA's Programmable Sound Generator"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license-file.workspace = true
+repository.workspace = true
+readme = "../README.md"
+keywords = ["games", "audio", "retro", "gba", "psg"]
+categories = ["games", "no-std"]
+publish = true
+
+[features]
+default = []
+## Adds `Player::play_song_shared`/`play_sfx_shared`, which take an `Rc` instead
+## of a borrow, for songs and effects built at runtime (an on-device editor).
+## Off by default: the `include_pmus!`/`include_psfx!` path stays borrow-only.
+dynamic = []
+
+[[example]]
+name = "dynamic_sfx"
+required-features = ["dynamic"]
+
+[dependencies]
+agb = "0.25.0"
+eb_agb_psg_macros = { version = "0.25.0", path = "../eb_agb_psg_macros" }
+eb_agb_psg_interop = { version = "0.25.0", path = "../eb_agb_psg_interop" }

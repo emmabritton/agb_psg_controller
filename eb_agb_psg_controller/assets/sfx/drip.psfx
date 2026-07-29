@@ -1,0 +1,22 @@
+(
+    version: 1,
+    frames_per_tick: 1.0,
+    ticks_per_row: 2,
+    channel: Wave,
+
+    instruments: {
+        "drop": Wave(table: "sine", volume: V100),
+    },
+
+    waves: {
+        "sine": "89ACDEEFFFEEDCA97653211000112356",
+    },
+
+    rows: [
+        "A-6 drop U06",
+        "--- ..   U0A",
+        "--- ..   M01",
+        "off ..   ---",
+    ],
+)
+

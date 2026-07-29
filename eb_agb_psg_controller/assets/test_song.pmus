@@ -1,0 +1,22 @@
+(
+    version: 1,
+    frames_per_tick: 2.0,
+    ticks_per_row: 4,
+    order: [0, 0],
+    loop_to: Some(0),
+    instruments: {
+        "beep": Square(envelope: (12, Down, 3)),
+        "bass": Wave(table: "tri", volume: V100),
+        "hat": Noise(envelope: (10, Down, 1)),
+    },
+    waves: {
+        "tri": "0123456789ABCDEFFEDCBA9876543210",
+    },
+    patterns: [
+        [
+            "--- .. --- | C-4 beep --- | C-3 bass --- | C-5 hat ---",
+            "skip 2",
+            "--- .. --- | off ..   --- | --- ..  --- | --- ..  ---",
+        ],
+    ],
+)

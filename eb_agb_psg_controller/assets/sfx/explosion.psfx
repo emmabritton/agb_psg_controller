@@ -1,0 +1,15 @@
+// Noise burst with a slow hardware decay.
+(
+    version: 1,
+    frames_per_tick: 1.0,
+    ticks_per_row: 2,
+    channel: Noise,
+    instruments: {
+        "boom": Noise(envelope: (15, Down, 4), lfsr: Long),
+    },
+    rows: [
+        "C-3 boom ---",
+        "skip 30",
+        "off ..   ---",
+    ],
+)

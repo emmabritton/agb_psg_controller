@@ -1,0 +1,49 @@
+// a gust moving through a gap in the stonework.
+//
+// Channel 4 (noise), Long LFSR -- the 15-bit register is proper broadband
+// hiss. Short would buzz.
+//
+// A low note is a low noise pitch, which is what gives this body rather than
+// making it a hiss. The whole gust sits at D-3 and below.
+//
+// Two shaping tricks, both needed because the wave channel's tools are not
+// available here:
+//
+//   1. The swell is authored as two note-ons, not as a volume slide. A rising
+//      hardware envelope (0, Up, 5) climbs 0->15 for free; a falling one takes
+//      it back down. Sxx/Mxx would work too, but they retrigger the channel on
+//      every row and cost pattern data for nothing.
+//
+//   2. Axy is the only pitch effect permitted on the noise column -- Uxx, Dxx,
+//      Txx and Vxy are all rejected here. A02 steps the noise pitch by 0, 0, +2
+//      each tick, which reads as the gust wavering. Effects do not carry over
+//      between rows, so it is repeated on every row.
+//
+// The retrigger at row 5 is inaudible: relighting the LFSR mid-hiss does not
+// click the way it would on a square wave.
+
+(
+    version: 1,
+    frames_per_tick: 4.0,
+    ticks_per_row: 4,           // 16 frames ≈ 0.268 s per row
+    channel: Noise,
+
+    instruments: {
+        "gust_in":  Noise(envelope: (0,  Up,   5), lfsr: Long),  // 0->15 over ≈ 1.17 s
+        "gust_out": Noise(envelope: (12, Down, 6), lfsr: Long),  // 12->0 over ≈ 1.13 s
+    },
+
+    rows: [
+        "D-3 gust_in  A02",     // swell begins from silence
+        "--- ..       A02",
+        "--- ..       A02",
+        "--- ..       A02",
+        "--- ..       A02",
+        "D-3 gust_out A02",     // peak: retrigger with the falling envelope
+        "--- ..       A02",
+        "--- ..       A02",
+        "C-3 ..       A02",     // drops a little as it dies away
+        "--- ..       A02",
+        "off ..       ---",
+    ],
+)
