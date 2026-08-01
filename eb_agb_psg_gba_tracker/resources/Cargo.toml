@@ -1,0 +1,18 @@
+[package]
+name = "resources"
+description = "PSG Tracker for GBA"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license-file.workspace = true
+repository.workspace = true
+readme = "../../README.md"
+keywords = ["games", "audio", "retro", "gba", "psg"]
+categories = ["games", "no-std"]
+publish = false
+
+
+[dependencies]
+agb = "0.25.0"
+eb_agb_psg_controller = { version = "0.26.0", path = "../../eb_agb_psg_controller", features = ["dynamic"] }
+gba_agb_font_renderer = {path="../../../agb_font_converter/gba_agb_font_renderer"}

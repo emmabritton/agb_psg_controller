@@ -1,5 +1,3 @@
-//! Proc-macros for `eb_agb_psg_controller`. Use them via that crate's re-exports:
-//! `eb_agb_psg_controller::include_pmus!` and `eb_agb_psg_controller::include_psfx!`.
 
 use proc_macro::TokenStream;
 use quote::quote;
@@ -7,17 +5,11 @@ use std::fs;
 use std::path::Path;
 use syn::LitStr;
 
-/// Parses a `.pmus` song file at compile time into a `Track` expression.
-///
-/// The path is relative to the crate's `Cargo.toml`.
 #[proc_macro]
 pub fn include_pmus(input: TokenStream) -> TokenStream {
     include_common(input, Kind::Song)
 }
 
-/// Parses a `.psfx` sound-effect file at compile time into an `Sfx` expression.
-///
-/// The path is relative to the crate's `Cargo.toml`.
 #[proc_macro]
 pub fn include_psfx(input: TokenStream) -> TokenStream {
     include_common(input, Kind::Sfx)
@@ -29,9 +21,6 @@ enum Kind {
 }
 
 impl Kind {
-    /// Songs and sound effects are different documents, so they have different
-    /// extensions; passing one to the other's macro is a mistake worth catching
-    /// before the parser reports a missing field.
     fn extension(&self) -> &'static str {
         match self {
             Kind::Song => "pmus",

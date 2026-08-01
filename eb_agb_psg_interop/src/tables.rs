@@ -1,16 +1,4 @@
-//! Precomputed pitch tables (no runtime division on the GBA).
 
-/// `NOTE_PERIODS[n - 1]` is the 11-bit hardware period for semitone `n`
-/// (C-2 = 1 … B-9 = 96) on the square channels: `period = 2048 - round(131072 / freq)`
-/// with `freq = 65.40639 * 2^((n - 1) / 12)`.
-///
-/// The wave channel plays an octave lower at the same period, so wave notes are
-/// looked up at `n + WAVE_NOTE_OFFSET`.
-/// `NOISE_TABLE[n - 1]` is the SOUND4CNT_H polynomial byte `(shift << 4) | divisor`
-/// for noise note `n` (1-60), ordered by ascending LFSR clock frequency
-/// (`524288 / r / 2^(s+1)`, with `r = 0.5` for divisor 0) — higher notes sound
-/// brighter. The 112 possible shift/divisor combinations collapse to exactly 60
-/// distinct frequencies.
 pub const NOISE_TABLE: [u8; 60] = [
     0xD7, 0xD6, 0xD5, 0xD4, 0xC7, 0xC6, 0xC5, 0xC4, 0xB7, 0xB6, 0xB5, 0xB4, // 1-12
     0xA7, 0xA6, 0xA5, 0xA4, 0x97, 0x96, 0x95, 0x94, 0x87, 0x86, 0x85, 0x84, // 13-24

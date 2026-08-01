@@ -1,6 +1,6 @@
 [package]
 name = "eb_agb_psg_controller"
-description = "Music and sound effect player for the GBA's Programmable Sound Generator"
+description = "Music and sound effect player for the GBA PSG"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -13,16 +13,20 @@ publish = true
 
 [features]
 default = []
-## Adds `Player::play_song_shared`/`play_sfx_shared`, which take an `Rc` instead
-## of a borrow, for songs and effects built at runtime (an on-device editor).
-## Off by default: the `include_pmus!`/`include_psfx!` path stays borrow-only.
 dynamic = []
+serde = ["eb_agb_psg_interop/serde"]
+# Swaps the register layer for an in-memory shadow + write log so Player runs
+# on the host (used by eb_agb_psg_cli). Never enable in a GBA build.
+host = []
 
 [[example]]
 name = "dynamic_sfx"
 required-features = ["dynamic"]
 
 [dependencies]
+agb_fixnum.workspace = true
+eb_agb_psg_macros = { version = "0.26.0", path = "../eb_agb_psg_macros" }
+eb_agb_psg_interop = { version = "0.26.0", path = "../eb_agb_psg_interop" }
+
+[target.'cfg(target_arch = "arm")'.dependencies]
 agb = "0.25.0"
-eb_agb_psg_macros = { version = "0.25.0", path = "../eb_agb_psg_macros" }
-eb_agb_psg_interop = { version = "0.25.0", path = "../eb_agb_psg_interop" }

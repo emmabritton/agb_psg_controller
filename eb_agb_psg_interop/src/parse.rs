@@ -1,5 +1,4 @@
-//! Parses `.pmus` / `.psfx` text into the ROM model, with validation.
-
+use crate::limits;
 use crate::track::*;
 use agb_fixnum::Num;
 use alloc::borrow::Cow;
@@ -43,9 +42,8 @@ pub fn parse_sfx(text: &str) -> Result<Sfx, ParseError> {
     lower_sfx(&file)
 }
 
-/// The parts every document has: version, timing, waves and instruments.
 struct Header {
-    frames_per_tick: Num<u32, 8>,
+    frames_per_tick: FrameCount,
     wave_tables: Vec<[u8; 16]>,
     instruments: Vec<Instrument>,
     instrument_index: BTreeMap<String, InstrumentRef>,
@@ -198,18 +196,23 @@ pub fn lower_sfx(file: &SfxFile) -> Result<Sfx, ParseError> {
     })
 }
 
-fn convert_frames_per_tick(value: f32) -> Result<Num<u32, 8>, ParseError> {
-    if !value.is_finite() || value <= 0.0 || value > 255.0 {
+fn convert_frames_per_tick(value: f32) -> Result<FrameCount, ParseError> {
+    if !value.is_finite() || value <= 0.0 || value > limits::FRAMES_PER_TICK_MAX as f32 {
         return err(format!(
-            "frames_per_tick must be greater than 0 and at most 255, got {value}"
+            "frames_per_tick must be greater than 0 and at most {}, got {value}",
+            limits::FRAMES_PER_TICK_MAX
         ));
     }
-    Ok(Num::from_raw((value * 256.0).round() as u32))
+    Ok(FrameCount::from_raw((value * 256.0).round() as u32))
 }
 
 fn check_ticks_per_row(value: u32) -> Result<(), ParseError> {
-    if !(1..=31).contains(&value) {
-        return err(format!("ticks_per_row must be 1-31, got {value}"));
+    if !(limits::TICKS_PER_ROW_MIN..=limits::TICKS_PER_ROW_MAX).contains(&value) {
+        return err(format!(
+            "ticks_per_row must be {}-{}, got {value}",
+            limits::TICKS_PER_ROW_MIN,
+            limits::TICKS_PER_ROW_MAX
+        ));
     }
     Ok(())
 }
@@ -217,8 +220,11 @@ fn check_ticks_per_row(value: u32) -> Result<(), ParseError> {
 type WaveTable = (Vec<[u8; 16]>, BTreeMap<String, u8>);
 
 fn build_waves(waves: &BTreeMap<String, String>) -> Result<WaveTable, ParseError> {
-    if waves.len() > 255 {
-        return err("too many wave tables (max 255)");
+    if waves.len() > limits::MAX_WAVE_TABLES {
+        return err(format!(
+            "too many wave tables (max {})",
+            limits::MAX_WAVE_TABLES
+        ));
     }
     let mut tables = Vec::with_capacity(waves.len());
     let mut index = BTreeMap::new();
@@ -238,8 +244,6 @@ fn build_waves(waves: &BTreeMap<String, String>) -> Result<WaveTable, ParseError
     Ok((tables, index))
 }
 
-/// What an instrument name resolves to: its 1-based index and enough kind
-/// information to validate cell placement.
 #[derive(Clone, Copy)]
 struct InstrumentRef {
     index: u8,
@@ -256,6 +260,15 @@ enum ColumnKind {
 }
 
 impl ColumnKind {
+    fn channel(self) -> SfxChannel {
+        match self {
+            ColumnKind::SquareSweep => SfxChannel::SquareSweep,
+            ColumnKind::Square => SfxChannel::Square,
+            ColumnKind::Wave => SfxChannel::Wave,
+            ColumnKind::Noise => SfxChannel::Noise,
+        }
+    }
+
     fn name(self) -> &'static str {
         match self {
             ColumnKind::SquareSweep => "square+sweep",
@@ -267,7 +280,6 @@ impl ColumnKind {
 
     fn accepts(self, instrument: ColumnKind) -> bool {
         match self {
-            // Both square columns take square instruments; sweep is checked separately.
             ColumnKind::SquareSweep | ColumnKind::Square => {
                 matches!(instrument, ColumnKind::SquareSweep | ColumnKind::Square)
             }
@@ -282,8 +294,11 @@ fn build_instruments(
     source: &BTreeMap<String, PsgInstrument>,
     wave_index: &BTreeMap<String, u8>,
 ) -> Result<InstrumentTable, ParseError> {
-    if source.len() > 255 {
-        return err("too many instruments (max 255)");
+    if source.len() > limits::MAX_INSTRUMENTS {
+        return err(format!(
+            "too many instruments (max {})",
+            limits::MAX_INSTRUMENTS
+        ));
     }
     let mut instruments = Vec::with_capacity(source.len());
     let mut index = BTreeMap::new();
@@ -298,9 +313,10 @@ fn build_instruments(
                 let envelope = convert_envelope(name, envelope)?;
                 let sweep = (*sweep)
                     .map(|(time, dir, shift)| {
-                        if time > 7 || shift > 7 {
+                        if time > limits::SWEEP_TIME_MAX || shift > limits::SWEEP_SHIFT_MAX {
                             return err(format!(
-                                "instrument \"{name}\": sweep time and shift must be 0-7"
+                                "instrument \"{name}\": sweep time and shift must be 0-{}",
+                                limits::SWEEP_TIME_MAX
                             ));
                         }
                         Ok(SweepSpec {
@@ -311,9 +327,13 @@ fn build_instruments(
                     })
                     .transpose()?;
                 if let Some(length) = length
-                    && !(1..=64).contains(length)
+                    && !(limits::SQUARE_LENGTH_MIN..=limits::SQUARE_LENGTH_MAX).contains(length)
                 {
-                    return err(format!("instrument \"{name}\": length must be 1-64"));
+                    return err(format!(
+                        "instrument \"{name}\": length must be {}-{}",
+                        limits::SQUARE_LENGTH_MIN,
+                        limits::SQUARE_LENGTH_MAX
+                    ));
                 }
                 let duty = match duty {
                     PsgDuty::D12_5 => 0,
@@ -381,14 +401,16 @@ fn convert_envelope(
     name: &str,
     &(volume, dir, step): &(u8, PsgDirection, u8),
 ) -> Result<EnvelopeSpec, ParseError> {
-    if volume > 15 {
+    if volume > limits::ENV_VOLUME_MAX {
         return err(format!(
-            "instrument \"{name}\": envelope volume must be 0-15"
+            "instrument \"{name}\": envelope volume must be 0-{}",
+            limits::ENV_VOLUME_MAX
         ));
     }
-    if step > 7 {
+    if step > limits::ENV_STEP_TIME_MAX {
         return err(format!(
-            "instrument \"{name}\": envelope step time must be 0-7"
+            "instrument \"{name}\": envelope step time must be 0-{}",
+            limits::ENV_STEP_TIME_MAX
         ));
     }
     Ok(EnvelopeSpec {
@@ -400,8 +422,6 @@ fn convert_envelope(
 
 struct RowContext {
     pattern: Option<usize>,
-    /// `Some` for songs (enables and bounds-checks `Bxx`); `None` for SFX,
-    /// where jump effects are rejected.
     order_len: Option<usize>,
 }
 
@@ -427,8 +447,6 @@ fn lower_rows(
 ) -> Result<Vec<PatternSlot>, ParseError> {
     let num_channels = columns.len();
     let mut slots = Vec::new();
-    // Tracks whether the most recent instrument per column has hardware sweep,
-    // to reject pitch-slide effects that would fight it.
     let mut sweep_active = vec![false; num_channels];
     let mut row = 0usize;
 
@@ -481,12 +499,13 @@ fn lower_rows(
                 .unwrap_or_else(|| "sfx".to_string())
         ));
     }
-    if row > 256 {
+    if row > limits::MAX_ROWS {
         return err(format!(
-            "{}: too many rows ({row}, max 256)",
+            "{}: too many rows ({row}, max {})",
             ctx.pattern
                 .map(|p| format!("pattern {p}"))
-                .unwrap_or_else(|| "sfx".to_string())
+                .unwrap_or_else(|| "sfx".to_string()),
+            limits::MAX_ROWS
         ));
     }
     Ok(slots)
@@ -583,7 +602,7 @@ fn parse_note(s: &str) -> Result<u8, String> {
     };
     let semitone = match b[1] {
         b'-' => base,
-        b'#' if base != 4 && base != 11 => base + 1, // no E#/B#
+        b'#' if base != 4 && base != 11 => base + 1,
         _ => return Err(format!("bad note \"{s}\"")),
     };
     let octave = (b[2] as char)
@@ -597,8 +616,6 @@ fn parse_effect(s: &str) -> Result<PsgEffect, String> {
     if s == "---" {
         return Ok(PsgEffect::None);
     }
-    // Byte length, so the ASCII check has to come first: a 3-byte token can be
-    // two characters, and slicing it below would split one of them.
     if s.len() != 3 || !s.is_ascii() {
         return Err(format!("bad effect \"{s}\""));
     }
@@ -636,12 +653,13 @@ fn validate_effect(
     sweep_active: bool,
     ctx: &RowContext,
 ) -> Result<(), String> {
-    let is_square = matches!(column, ColumnKind::SquareSweep | ColumnKind::Square);
+    let channel = column.channel();
     match effect {
         PsgEffect::PortamentoUp(_)
         | PsgEffect::PortamentoDown(_)
         | PsgEffect::TonePortamento(_)
-            if sweep_active =>
+            if !limits::pitch_slides_allowed(channel, sweep_active)
+                && limits::period_effects_allowed(channel) =>
         {
             Err("pitch slides cannot be combined with a sweep instrument".to_string())
         }
@@ -649,7 +667,7 @@ fn validate_effect(
         | PsgEffect::PortamentoDown(_)
         | PsgEffect::TonePortamento(_)
         | PsgEffect::Vibrato { .. }
-            if column == ColumnKind::Noise =>
+            if !limits::period_effects_allowed(channel) =>
         {
             Err(
                 "period-based pitch effects do not work on the noise channel (arpeggio does)"
@@ -666,18 +684,26 @@ fn validate_effect(
         PsgEffect::PatternBreak(_) if ctx.order_len.is_none() => {
             Err("pattern break is not allowed in an sfx".to_string())
         }
-        PsgEffect::SetTicksPerRow(t) if !(1..=31).contains(t) => {
-            Err(format!("ticks per row must be 1-31, got {t}"))
+        PsgEffect::SetTicksPerRow(t)
+            if !(limits::TICKS_PER_ROW_MIN..=limits::TICKS_PER_ROW_MAX).contains(&(*t as u32)) =>
+        {
+            Err(format!(
+                "ticks per row must be {}-{}, got {t}",
+                limits::TICKS_PER_ROW_MIN,
+                limits::TICKS_PER_ROW_MAX
+            ))
         }
         PsgEffect::SetFramesPerTick(f) if f.to_raw() == 0 => {
             Err("frames per tick must be greater than 0".to_string())
         }
-        PsgEffect::SetDuty(_) if !is_square => {
+        PsgEffect::SetDuty(_) if !limits::duty_allowed(channel) => {
             Err("duty only applies to square channels".to_string())
         }
-        PsgEffect::SetDuty(d) if *d > 3 => Err(format!("duty must be 0-3, got {d}")),
+        PsgEffect::SetDuty(d) if *d > limits::DUTY_MAX => {
+            Err(format!("duty must be 0-{}, got {d}", limits::DUTY_MAX))
+        }
         PsgEffect::SetVolume(v) => {
-            let max = if column == ColumnKind::Wave { 4 } else { 15 };
+            let max = limits::volume_max(channel);
             if *v > max {
                 Err(format!(
                     "volume must be 0-{max} on the {} channel, got {v}",

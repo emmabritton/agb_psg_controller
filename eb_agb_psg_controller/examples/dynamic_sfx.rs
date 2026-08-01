@@ -18,15 +18,14 @@
 
 extern crate alloc;
 
-use agb::fixnum::Num;
 use agb::input::{Button, ButtonController};
 use alloc::borrow::Cow;
 use alloc::rc::Rc;
 use alloc::vec;
 use alloc::vec::Vec;
 use eb_agb_psg_controller::{
-    EnvelopeSpec, Instrument, NOTE_MAX, NUM_CHANNELS, Pattern, PatternSlot, Player, PsgEffect, Sfx,
-    SfxChannel, Track,
+    EnvelopeSpec, FrameCount, Instrument, NOTE_MAX, NUM_CHANNELS, Pattern, PatternSlot, Player,
+    PsgEffect, Sfx, SfxChannel, Track,
 };
 
 /// The editor's document: plain owned data, no `Sfx`, no lifetimes. This is
@@ -34,8 +33,8 @@ use eb_agb_psg_controller::{
 /// it would serialise for export.
 struct Document {
     note: u8,
-    /// Whole frames per tick. The player takes 8.8 fixed point, so a real
-    /// editor would expose fractional tempos too.
+    /// Whole frames per tick. The player takes a `FrameCount` (8.8 fixed
+    /// point), so a real editor would expose fractional tempos too.
     frames_per_tick: u32,
 }
 
@@ -98,7 +97,7 @@ impl Document {
             instruments: Cow::Owned(vec![self.square_instrument()]),
             wave_tables: Cow::Owned(Vec::new()),
             rows: Cow::Owned(rows),
-            frames_per_tick: Num::new(self.frames_per_tick),
+            frames_per_tick: FrameCount::new(self.frames_per_tick),
             ticks_per_row: 4,
         }
     }
@@ -127,7 +126,7 @@ impl Document {
                 num_rows: ROWS,
             }]),
             pattern_order: Cow::Owned(vec![0]),
-            frames_per_tick: Num::new(self.frames_per_tick),
+            frames_per_tick: FrameCount::new(self.frames_per_tick),
             ticks_per_row: 4,
             loop_order_index: Some(0),
         }

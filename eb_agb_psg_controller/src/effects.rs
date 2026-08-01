@@ -1,34 +1,26 @@
-//! Effect state machines: pure math over `ChannelState`, no register access,
-//! so behaviour is testable without listening.
-
-use agb::fixnum::Num;
-use eb_agb_psg_interop::{NOISE_NOTE_MAX, NOTE_MAX, NOTE_PERIODS, PsgEffect, WAVE_NOTE_OFFSET};
+use eb_agb_psg_interop::{
+    FrameCount, NOISE_NOTE_MAX, NOTE_MAX, NOTE_PERIODS, PsgEffect, WAVE_NOTE_OFFSET,
+};
 
 use crate::{ChannelState, dirty, silence_state};
 
-/// round(8 * sin(2*pi*i / 32)) — used for vibrato, scaled by depth.
 const SINE8: [i8; 32] = [
     0, 2, 3, 4, 6, 7, 7, 8, 8, 8, 7, 7, 6, 4, 3, 2, 0, -2, -3, -4, -6, -7, -7, -8, -8, -8, -7, -7,
     -6, -4, -3, -2,
 ];
 
-/// Row-level changes that outlive a single channel: tempo and jumps, applied
-/// by the player after the whole row is processed.
 #[derive(Default)]
 pub struct TimingChange {
     pub ticks_per_row: Option<u32>,
-    pub frames_per_tick: Option<Num<u32, 8>>,
+    pub frames_per_tick: Option<FrameCount>,
     pub jump: Option<Jump>,
 }
 
 pub enum Jump {
-    /// Continue at this order position, row 0.
     Position(u8),
-    /// Continue at this row of the next order entry.
     Break(u8),
 }
 
-/// Applies the immediate (tick 0) part of the row's effect.
 pub fn apply_row_effect(state: &mut ChannelState, channel: usize, timing: &mut TimingChange) {
     match state.effect {
         PsgEffect::VolumeSlide(delta) => change_volume(state, channel, delta),
@@ -38,10 +30,6 @@ pub fn apply_row_effect(state: &mut ChannelState, channel: usize, timing: &mut T
         }
         PsgEffect::SetDuty(duty) => {
             state.duty = duty;
-            // Duty lives in the same register as the envelope; rewriting it
-            // mid-note has unreliable envelope side effects on hardware, so we
-            // apply it with a retrigger like volume changes — but only when
-            // there is a note to retrigger.
             if state.note != 0 {
                 state.dirty |= dirty::RETRIGGER;
             }
@@ -55,8 +43,7 @@ pub fn apply_row_effect(state: &mut ChannelState, channel: usize, timing: &mut T
         PsgEffect::NoteCut(0) => silence_state(state),
         PsgEffect::SetTicksPerRow(ticks) => timing.ticks_per_row = Some(ticks as u32),
         PsgEffect::SetFramesPerTick(frames) => {
-            // 4.4 -> 8.8 fixed point
-            timing.frames_per_tick = Some(Num::from_raw((frames.to_raw() as u32) << 4));
+            timing.frames_per_tick = Some(FrameCount::from_raw((frames.to_raw() as u32) << 4));
         }
         PsgEffect::PositionJump(target) => timing.jump = Some(Jump::Position(target)),
         PsgEffect::PatternBreak(row) => timing.jump = Some(Jump::Break(row)),
@@ -64,7 +51,6 @@ pub fn apply_row_effect(state: &mut ChannelState, channel: usize, timing: &mut T
     }
 }
 
-/// Applies the continuous part of the row's effect on ticks 1..ticks_per_row.
 pub fn apply_tick_effect(state: &mut ChannelState, channel: usize, tick: u32) {
     match state.effect {
         PsgEffect::Arpeggio(x, y) => {
@@ -110,8 +96,6 @@ pub fn apply_tick_effect(state: &mut ChannelState, channel: usize, tick: u32) {
 
 fn apply_arpeggio(state: &mut ChannelState, channel: usize, offset: u8) {
     if state.note == 0 {
-        // Nothing sounding to transpose; without this the offset alone would be
-        // read as a semitone index.
         return;
     }
     if channel == 3 {
@@ -137,17 +121,11 @@ fn change_volume(state: &mut ChannelState, channel: usize, delta: i8) {
     }
     state.volume = volume;
     if state.note == 0 {
-        // Silent channel: keep the value for the next note-on, which writes it
-        // as part of triggering. Touching hardware here would either restart a
-        // note the song has already ended or, on noise, trigger with no pitch.
         return;
     }
     if channel == 2 {
-        // Wave volume is a free register write.
         state.dirty |= dirty::VOLUME;
     } else {
-        // Square/noise volume only takes effect on retrigger (hardware quirk);
-        // accept the phase-reset click, as documented.
         state.dirty |= dirty::RETRIGGER;
     }
 }

@@ -6,10 +6,10 @@ A song or sound effect is a single [RON](https://github.com/ron-rs/ron) document
 
 The two documents are different formats and use different extensions:
 
-| Extension | Contents | Included with |
-|---|---|---|
-| `.pmus` | a song: patterns across all four channels, with an order list and looping | `include_pmus!` |
-| `.psfx` | a sound effect: one channel, one list of rows, played once | `include_psfx!` |
+| Extension | Contents                                                                  | Included with   |
+|-----------|---------------------------------------------------------------------------|-----------------|
+| `.pmus`   | a song: patterns across all four channels, with an order list and looping | `include_pmus!` |
+| `.psfx`   | a sound effect: one channel, one list of rows, played once                | `include_psfx!` |
 
 Files are parsed at compile time; errors are reported as compile errors, including passing a file
 to the wrong macro.
@@ -265,6 +265,13 @@ run inside one frame, and only the state they leave behind is played — a note 
 within the same frame is never heard. Ticks stay in time either way; it is only the audible
 resolution that is capped at one change per frame.
 
+**So `1.0` is the practical floor.** Smaller values are accepted — anything above 0, down to
+`1/256` in the header and `F01` (0.0625) for the `Fxx` effect — but they buy no extra effect
+resolution, and they spend CPU on ticks whose output is discarded. The one thing they are good for
+is tempo granularity finer than a whole frame; raising `ticks_per_row` reaches the same tempo while
+keeping every tick audible, so prefer that. Note that `ticks_per_row: 1` gets no continuous effects
+at all, so a song wanting vibrato or slides needs at least 2.
+
 ### Row strings
 
 A row is 4 cells separated by `|` — one per channel, always in the fixed order square+sweep,
@@ -403,26 +410,38 @@ since faded it out on its own.
 
 One effect per cell. The parameter is always two hexadecimal digits, and always required.
 
-| Effect | Meaning |
-|---|---|
-| `Axy` | Arpeggio: rotate base note, +x, +y semitones each tick |
-| `Uxx` / `Dxx` | Pitch slide up / down by xx period units per tick |
-| `Txx` | Tone portamento: slide toward this cell's note at xx period units per tick |
-| `Vxy` | Vibrato: speed x, depth y |
-| `Sxx` | Volume slide: signed byte added to volume each row (square/noise: retriggers, see below) |
-| `Cxx` | Note cut: silence the channel at tick xx |
-| `Qxx` | Note delay: trigger this cell's note at tick xx instead of tick 0 |
-| `Bxx` | Position jump: continue at order index xx after this row |
-| `Kxx` | Pattern break: continue at row xx of the next order entry after this row |
-| `Rxx` | Set ticks per row (1-31) |
-| `Fxx` | Set frames per tick, 4.4 fixed point (e.g. `F28` = 2.5) |
-| `Wxx` | Set square duty 0-3 (12.5/25/50/75%) |
-| `Pxx` | Panning: bit 1 = left on, bit 0 = right on (`P03` = centre, `P02` = left only) |
-| `Mxx` | Set volume: 0-15 on square/noise, 0-4 on wave (0 mute, 1 = 25% … 4 = 100%) |
+| Effect        | Meaning                                                                                  | Valid values                                                |
+|---------------|------------------------------------------------------------------------------------------|-------------------------------------------------------------|
+| `Axy`         | Arpeggio: rotate base note, +x, +y semitones each tick                                   | `x`, `y`: `0`–`F` (0–15 semitones, upward only)             |
+| `Uxx` / `Dxx` | Pitch slide up / down by xx period units per tick                                        | `00`–`FF`                                                   |
+| `Txx`         | Tone portamento: slide toward this cell's note at xx period units per tick               | `00`–`FF`                                                   |
+| `Vxy`         | Vibrato: speed x, depth y                                                                | `x`, `y`: `0`–`F`                                           |
+| `Sxx`         | Volume slide: signed byte added to volume each row (square/noise: retriggers, see below) | `00`–`FF`, read as a signed byte: `S01` = +1, `SFF` = −1    |
+| `Cxx`         | Note cut: silence the channel at tick xx                                                 | `00`–`FF`; a tick the row never reaches cuts nothing        |
+| `Qxx`         | Note delay: trigger this cell's note at tick xx instead of tick 0                        | `00`–`FF`; at or past `ticks_per_row` the note never sounds |
+| `Bxx`         | Position jump: continue at order index xx after this row                                 | `00` to order length − 1; songs only                        |
+| `Kxx`         | Pattern break: continue at row xx of the next order entry after this row                 | `00`–`FF`, clamped to that pattern's last row; songs only   |
+| `Rxx`         | Set ticks per row                                                                        | `01`–`1F` (1–31)                                            |
+| `Fxx`         | Set frames per tick, 4.4 fixed point (e.g. `F28` = 2.5)                                  | `01`–`FF` (0.0625–15.9375)                                  |
+| `Wxx`         | Set square duty (12.5/25/50/75%)                                                         | `00`–`03`; square columns only                              |
+| `Pxx`         | Panning: bit 1 = left on, bit 0 = right on (`P03` = centre, `P02` = left only)           | `00`–`03`; higher bits are ignored                          |
+| `Mxx`         | Set volume (0 mute; wave: 1 = 25% … 4 = 100%)                                            | `00`–`0F` square/noise, `00`–`04` wave                      |
+
+A parameter shown as `00`–`FF` is a full byte with no validation beyond the two hex digits; every
+narrower range is enforced by the parser, which rejects the file (the ranges live in
+`eb_agb_psg_interop::limits`, shared with the on-device tracker's editors). Channel restrictions —
+which effects are rejected on the noise column or alongside a sweep instrument — are described
+under the prose headings below. The on-device tracker additionally keeps `Sxx` within ±15
+(`SF1`–`S0F`) and `Cxx`/`Qxx` at tick 31 or below — the values a row can actually use — but the
+parser accepts the full byte.
 
 **Pitch effects.** `Axy` cycles the pitch every tick — base note on ticks 0, 3, 6…, +x on ticks 1,
 4…, +y on ticks 2, 5… — the classic chiptune substitute for a chord; on the noise channel it steps
-the noise pitch instead. `Uxx`, `Dxx` and `Txx` operate on the raw 11-bit period register, not on
+the noise pitch instead. Like every effect it stops at the next row, but it does not restore the
+base pitch on the way out: the note keeps ringing at whatever offset the row's last tick applied.
+A `ticks_per_row` divisible by 3 ends each row back on the base note, so the cycle tiles cleanly
+across rows; any other row length leaves a sustained note parked at +x or +y until a new note or
+pitch effect touches the channel. `Uxx`, `Dxx` and `Txx` operate on the raw 11-bit period register, not on
 semitones, so the same `xx` is a wide interval low in the range and a very small one high up;
 expect to tune slide values by ear per octave. `Txx` slides toward the note written in the same
 cell without retriggering it, so a legato line is `C-4 lead ---` then `E-4 .. T08`. `Vxy` moves the
@@ -469,7 +488,7 @@ version 1 — the music's panning stays in control of `SOUNDCNT_L`.
 
 | Thing | Limit |
 |---|---|
-| `frames_per_tick` | > 0 and ≤ 255 (8.8 fixed point) |
+| `frames_per_tick` | > 0 and ≤ 255 (8.8 fixed point); `1.0` is the practical floor |
 | `ticks_per_row` | 1–31 |
 | patterns per document | 256 |
 | rows per pattern (including `skip`ped rows) | 256 |

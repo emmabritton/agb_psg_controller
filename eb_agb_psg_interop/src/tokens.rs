@@ -1,8 +1,3 @@
-//! `ToTokens` impls that emit the ROM model as Rust source reconstructing it
-//! from `static` data. The generated code resolves its paths through
-//! `eb_agb_psg_controller::__private`, so users only need that crate as a
-//! dependency.
-
 use crate::track::*;
 use proc_macro2::TokenStream;
 use quote::{ToTokens, TokenStreamExt, quote};
@@ -196,7 +191,7 @@ impl ToTokens for Track {
                 pattern_data: #p::Cow::Borrowed(PATTERN_DATA),
                 patterns: #p::Cow::Borrowed(PATTERNS),
                 pattern_order: #p::Cow::Borrowed(PATTERN_ORDER),
-                frames_per_tick: #p::Num::from_raw(#frames_per_tick),
+                frames_per_tick: #i::FrameCount::from_raw(#frames_per_tick),
                 ticks_per_row: #ticks_per_row,
                 loop_order_index: #loop_order_index,
             }
@@ -223,7 +218,7 @@ impl ToTokens for Sfx {
                 instruments: #p::Cow::Borrowed(INSTRUMENTS),
                 wave_tables: #p::Cow::Borrowed(WAVE_TABLES),
                 rows: #p::Cow::Borrowed(ROWS),
-                frames_per_tick: #p::Num::from_raw(#frames_per_tick),
+                frames_per_tick: #i::FrameCount::from_raw(#frames_per_tick),
                 ticks_per_row: #ticks_per_row,
             }
         }});

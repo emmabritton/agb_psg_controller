@@ -1,10 +1,10 @@
 use crate::{ChannelState, dirty, silence_state};
-use agb::fixnum::Num;
+use agb_fixnum::num;
 #[cfg(feature = "dynamic")]
 use alloc::rc::Rc;
 use eb_agb_psg_interop::{
-    Instrument, NOISE_NOTE_MAX, NOISE_TABLE, NOTE_MAX, NOTE_OFF, NOTE_PERIODS, NUM_CHANNELS,
-    PatternSlot, PsgEffect, Sfx, SfxChannel, Track, WAVE_NOTE_OFFSET,
+    FrameCount, Instrument, NOISE_NOTE_MAX, NOISE_TABLE, NOTE_MAX, NOTE_OFF, NOTE_PERIODS,
+    NUM_CHANNELS, PatternSlot, PsgEffect, Sfx, SfxChannel, Track, WAVE_NOTE_OFFSET,
 };
 
 use crate::channels::square::{self, SquareChannel};
@@ -12,8 +12,6 @@ use crate::channels::{envelope_bits, noise, wave};
 use crate::effects::{self, Jump, TimingChange};
 use crate::registers::{MASTER_ENABLE, PSG_RATIO_MASK, SOUNDCNT_H, SOUNDCNT_L, SOUNDCNT_X};
 
-/// How loud the PSG output is mixed relative to the DMA (agb mixer) output.
-/// Use [`PsgRatio::Full`] when the PSG is the only sound source.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PsgRatio {
     Quarter = 0,
@@ -21,9 +19,6 @@ pub enum PsgRatio {
     Full = 2,
 }
 
-/// Song or effect data the player is reading from. Without the `dynamic`
-/// feature this is exactly a `&'a T`, so the ROM-static path costs nothing;
-/// with it, playback can instead share ownership of one built at runtime.
 #[cfg(not(feature = "dynamic"))]
 struct Held<'a, T>(&'a T);
 
@@ -68,11 +63,10 @@ impl<T> core::ops::Deref for Held<'_, T> {
     }
 }
 
-/// A playing sound effect: its own row/tick machinery over one channel.
 struct ActiveSfx<'a> {
     sfx: Held<'a, Sfx>,
-    frame_acc: Num<u32, 8>,
-    frames_per_tick: Num<u32, 8>,
+    frame_acc: FrameCount,
+    frames_per_tick: FrameCount,
     ticks_per_row: u32,
     tick: u32,
     row: u32,
@@ -88,14 +82,11 @@ fn sfx_hardware_channel(sfx: &Sfx) -> usize {
     }
 }
 
-/// An opaque snapshot of a song's playback position, obtained from
-/// [`Player::position`] and later restored with [`Player::set_position`] to
-/// resume playback (e.g. across a save/load). Only valid for the [`Track`] it
-/// was taken from.
+//opaque position
 #[derive(Debug, Clone, Copy)]
 pub struct PlaybackPosition {
-    frame_acc: Num<u32, 8>,
-    frames_per_tick: Num<u32, 8>,
+    frame_acc: FrameCount,
+    frames_per_tick: FrameCount,
     ticks_per_row: u32,
     tick: u32,
     row: u32,
@@ -105,8 +96,8 @@ pub struct PlaybackPosition {
 /// The playback position of the current song.
 struct MusicState<'track> {
     track: Held<'track, Track>,
-    frame_acc: Num<u32, 8>,
-    frames_per_tick: Num<u32, 8>,
+    frame_acc: FrameCount,
+    frames_per_tick: FrameCount,
     ticks_per_row: u32,
     tick: u32,
     row: u32,
@@ -121,7 +112,7 @@ struct MusicState<'track> {
 impl<'track> MusicState<'track> {
     fn new(track: Held<'track, Track>) -> Self {
         Self {
-            frame_acc: Num::new(0),
+            frame_acc: num!(0),
             frames_per_tick: track.frames_per_tick,
             ticks_per_row: track.ticks_per_row,
             tick: 0,
@@ -243,28 +234,15 @@ impl<'track> MusicState<'track> {
     }
 }
 
-/// Plays an optional [`Track`] on the PSG, plus one-shot [`Sfx`]s that
-/// temporarily steal a channel from the music. Call [`Player::frame`] once per
-/// frame.
-///
-/// For sound effects without music, create the player with
-/// [`Player::sfx_only`]; a song can be started (or replaced) at any time with
-/// [`Player::play_song`].
-///
-/// Uses no hardware timers and coexists with agb's mixer: the PSG mix level is
-/// re-asserted every frame, so the mixer can be created before or after this.
 pub struct Player<'track> {
     music: Option<MusicState<'track>>,
     psg_ratio: u16,
-    /// Our copy of SOUNDCNT_L, so panning updates are a single write.
     pan_shadow: u16,
     channels: [ChannelState; NUM_CHANNELS],
     sfx: [Option<ActiveSfx<'track>>; NUM_CHANNELS],
 }
 
 impl<'track> Player<'track> {
-    // No Default: construction writes sound registers, which a `..Default::
-    // default()` would hide.
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         let player = Self {
@@ -274,24 +252,16 @@ impl<'track> Player<'track> {
             channels: Default::default(),
             sfx: [None, None, None, None],
         };
-        // Master enable must be set first: all other PSG registers ignore
-        // writes while it is clear.
         SOUNDCNT_X.set_bits(MASTER_ENABLE, MASTER_ENABLE);
-        // Master L/R volume 7 and all four channels enabled both sides.
         SOUNDCNT_L.set(0xFF77);
         SOUNDCNT_H.set_bits(PSG_RATIO_MASK, player.psg_ratio);
         player
     }
 
-    /// Starts playing a song from the beginning, replacing the current one if
-    /// any. Playing sound effects keep their channels until they finish.
     pub fn play_song(&mut self, track: &'track Track) {
         self.start_song(Held::borrowed(track));
     }
 
-    /// Like [`Player::play_song`], but for a [`Track`] built at runtime: the
-    /// player shares ownership of it rather than borrowing, so it does not
-    /// have to outlive the player. Requires the `dynamic` feature.
     #[cfg(feature = "dynamic")]
     pub fn play_song_shared(&mut self, track: Rc<Track>) {
         self.start_song(Held::Shared(track));
@@ -305,14 +275,9 @@ impl<'track> Player<'track> {
                 ..ChannelState::default()
             };
         }
-        // The reset put every channel back to centre; make hardware follow, or
-        // the new song inherits the previous one's Pxx panning.
         self.write_panning();
     }
 
-    /// Returns a snapshot of the current song's playback position, or `None`
-    /// if no song is playing. Save this to resume playback later with
-    /// [`Player::set_position`].
     pub fn position(&self) -> Option<PlaybackPosition> {
         self.music.as_ref().map(|music| PlaybackPosition {
             frame_acc: music.frame_acc,
@@ -324,11 +289,6 @@ impl<'track> Player<'track> {
         })
     }
 
-    /// Resumes playback of the current song at a previously saved
-    /// [`PlaybackPosition`]. Has no effect if no song is playing, or if the
-    /// position does not fit the current track (it must have been taken from
-    /// the same one). Channels are reset as if the song had just been
-    /// (re)started.
     pub fn set_position(&mut self, position: PlaybackPosition) {
         let Some(music) = &mut self.music else {
             return;
@@ -341,7 +301,6 @@ impl<'track> Player<'track> {
         music.ticks_per_row = position.ticks_per_row;
         music.tick = position.tick;
         music.order_pos = position.order_pos;
-        // Patterns differ in length, so a row from another track may not exist.
         music.row = position
             .row
             .min(music.current_pattern().num_rows.saturating_sub(1));
@@ -353,18 +312,9 @@ impl<'track> Player<'track> {
                 ..ChannelState::default()
             };
         }
-        // As in start_song: hardware panning must match the reset state.
         self.write_panning();
     }
 
-    /// Overrides whether the current song loops, without touching the
-    /// [`Track`] itself. `false` makes it stop at the end even if it declares a
-    /// `loop_to`; `true` restores the track's own setting (which may be "play
-    /// once" anyway). Has no effect if no song is playing, and is reset by the
-    /// next [`Player::play_song`].
-    ///
-    /// Safe to call mid-song: it only changes what happens at the end, so it
-    /// also serves as "finish this loop, then stop".
     pub fn set_looping(&mut self, looping: bool) {
         if let Some(music) = &mut self.music {
             music.loop_to = if looping {
@@ -375,7 +325,6 @@ impl<'track> Player<'track> {
         }
     }
 
-    /// Stops the music (playing sound effects continue).
     pub fn stop_song(&mut self) {
         self.music = None;
         for state in &mut self.channels {
@@ -383,26 +332,21 @@ impl<'track> Player<'track> {
         }
     }
 
-    /// Sets the PSG mix level (defaults to [`PsgRatio::Full`]). Use a lower
-    /// ratio when also using agb's software mixer.
     pub fn with_psg_ratio(mut self, ratio: PsgRatio) -> Self {
         self.psg_ratio = ratio as u16;
         SOUNDCNT_H.set_bits(PSG_RATIO_MASK, self.psg_ratio);
         self
     }
 
-    /// Advances playback by one frame. Call exactly once per frame, e.g.
-    /// right before or after `mixer.frame()`.
     pub fn frame(&mut self) {
-        // agb's mixer rewrites SOUNDCNT_H (zeroing the PSG ratio bits) when it
-        // is created, so re-assert our bits every frame to be order-independent.
+        //agb zeroes these, so reset
         SOUNDCNT_X.set_bits(MASTER_ENABLE, MASTER_ENABLE);
         SOUNDCNT_H.set_bits(PSG_RATIO_MASK, self.psg_ratio);
 
         if let Some(music) = &mut self.music
             && !music.finished
         {
-            music.frame_acc += Num::new(1);
+            music.frame_acc += num!(1);
             while music.frame_acc >= music.frames_per_tick {
                 music.frame_acc -= music.frames_per_tick;
                 music.tick(&mut self.channels);
@@ -416,17 +360,10 @@ impl<'track> Player<'track> {
         self.realise();
     }
 
-    /// Starts a sound effect, stealing its channel from the music. The music
-    /// keeps advancing silently on that channel and becomes audible again at
-    /// its next note after the effect ends. A new effect on the same channel
-    /// replaces the current one; effects on different channels play together.
     pub fn play_sfx(&mut self, sfx: &'track Sfx) {
         self.start_sfx(Held::borrowed(sfx));
     }
 
-    /// Like [`Player::play_sfx`], but for an [`Sfx`] built at runtime: the
-    /// player shares ownership of it rather than borrowing, so it does not
-    /// have to outlive the player. Requires the `dynamic` feature.
     #[cfg(feature = "dynamic")]
     pub fn play_sfx_shared(&mut self, sfx: Rc<Sfx>) {
         self.start_sfx(Held::Shared(sfx));
@@ -435,7 +372,7 @@ impl<'track> Player<'track> {
     fn start_sfx(&mut self, sfx: Held<'track, Sfx>) {
         let channel = sfx_hardware_channel(&sfx);
         self.sfx[channel] = Some(ActiveSfx {
-            frame_acc: Num::new(0),
+            frame_acc: num!(0),
             frames_per_tick: sfx.frames_per_tick,
             ticks_per_row: sfx.ticks_per_row,
             tick: 0,
@@ -446,7 +383,6 @@ impl<'track> Player<'track> {
         });
     }
 
-    /// Stops all playing sound effects, returning their channels to the music.
     pub fn stop_sfx(&mut self) {
         for channel in 0..NUM_CHANNELS {
             if self.sfx[channel].is_some() {
@@ -455,21 +391,16 @@ impl<'track> Player<'track> {
         }
     }
 
-    /// Stops everything: sound effects and music, silencing all channels.
     pub fn stop(&mut self) {
         self.stop_sfx();
         self.stop_song();
         self.realise();
     }
 
-    /// True when there is nothing left to play: no song, or a non-looping song
-    /// that has ended. Sound effects do not affect this.
     pub fn is_finished(&self) -> bool {
         self.music.as_ref().is_none_or(|music| music.finished)
     }
 
-    /// (order position, row, tick) — for tests and debugging. (0, 0, 0) with
-    /// no music.
     #[doc(hidden)]
     pub fn debug_position(&self) -> (u32, u32, u32) {
         self.music
@@ -477,25 +408,22 @@ impl<'track> Player<'track> {
             .map_or((0, 0, 0), |music| (music.order_pos, music.row, music.tick))
     }
 
-    /// (period, volume) of a music channel — for tests and debugging.
     #[doc(hidden)]
     pub fn debug_channel(&self, channel: usize) -> (u16, u8) {
         (self.channels[channel].period, self.channels[channel].volume)
     }
 
-    /// Whether a sound effect currently owns this channel — for tests.
     #[doc(hidden)]
     pub fn debug_sfx_active(&self, channel: usize) -> bool {
         self.sfx[channel].is_some()
     }
 
-    /// Advances every active sound effect by one frame, releasing finished ones.
     fn step_sfx(&mut self) {
         for channel in 0..NUM_CHANNELS {
             let Some(active) = &mut self.sfx[channel] else {
                 continue;
             };
-            active.frame_acc += Num::new(1);
+            active.frame_acc += num!(1);
             let mut ended = false;
             while active.frame_acc >= active.frames_per_tick {
                 active.frame_acc -= active.frames_per_tick;
@@ -541,28 +469,20 @@ impl<'track> Player<'track> {
         }
     }
 
-    /// Ends a sound effect: silence the channel and hand it back to the music,
-    /// which stays silent until its next note-on (documented resync policy —
-    /// retriggering a mid-decay note would sound worse than a short gap).
     fn release_sfx(&mut self, channel: usize) {
         self.sfx[channel] = None;
         silence_hardware(channel);
         let state = &mut self.channels[channel];
         state.dirty = 0;
         if channel == 2 {
-            // The effect overwrote wave RAM; force a re-upload at the next note.
             state.loaded_wave = None;
         }
     }
 
     fn realise(&mut self) {
         let mut pan_changed = false;
-        // Single pass over 0..NUM_CHANNELS (rather than two separate passes)
-        // — same work, half the loop overhead, since this runs every frame.
         for channel in 0..NUM_CHANNELS {
             if let Some(active) = &mut self.sfx[channel] {
-                // Music state keeps advancing while stolen, but its hardware
-                // writes are dropped. Panning intent survives in the state.
                 pan_changed |= self.channels[channel].dirty & dirty::PAN != 0;
                 self.channels[channel].dirty = 0;
                 let ActiveSfx { sfx, state, .. } = active;
@@ -577,8 +497,6 @@ impl<'track> Player<'track> {
                     &music.track.instruments,
                     &music.track.wave_tables,
                 ),
-                // No song: the only meaningful music-channel flags are
-                // silences (e.g. from stop_song).
                 None => flush_state(state, channel, &[], &[]),
             };
         }
@@ -587,7 +505,6 @@ impl<'track> Player<'track> {
         }
     }
 
-    /// Rebuilds SOUNDCNT_L from the per-channel pan flags (master volume 7/7).
     fn write_panning(&mut self) {
         let mut value = 0x0077;
         for (channel, state) in self.channels.iter().enumerate() {
@@ -601,7 +518,6 @@ impl<'track> Player<'track> {
     }
 }
 
-/// Applies a cell's instrument and note to a channel state.
 fn apply_cell(
     state: &mut ChannelState,
     instruments: &[Instrument],
@@ -630,15 +546,12 @@ fn apply_cell(
             state.noise_note = note;
             let period = period_for(note, channel);
             if matches!(slot.effect, PsgEffect::TonePortamento(_)) {
-                // Slide from the current pitch instead of retriggering.
                 state.target_period = period;
             } else {
                 state.period = period;
                 state.target_period = period;
                 state.vibrato_phase = 0;
                 state.vib_offset = 0;
-                // A retrigger supersedes any pending silence (e.g. from a song
-                // switch); without this the new song's first notes are eaten.
                 state.dirty = (state.dirty & !dirty::SILENCE) | dirty::RETRIGGER;
             }
         }
@@ -659,8 +572,6 @@ fn period_for(note: u8, channel: usize) -> u16 {
     NOTE_PERIODS[(table_note - 1) as usize]
 }
 
-/// Writes a channel state's pending changes to hardware. Returns whether the
-/// panning registers need refreshing.
 fn flush_state(
     state: &mut ChannelState,
     channel: usize,
@@ -710,8 +621,6 @@ fn silence_hardware(channel: usize) {
     }
 }
 
-/// The hardware period for a channel state right now: the slid period plus the
-/// vibrato offset.
 fn effective_period(state: &ChannelState) -> u16 {
     (state.period as i32 + state.vib_offset as i32).clamp(0, 2047) as u16
 }
@@ -775,14 +684,18 @@ fn trigger_hardware(
                 short_lfsr,
             );
         }
-        // Parser validation makes instrument/channel mismatches unreachable
-        // for macro-built tracks; ignore rather than panic on bad input.
         _ => {}
     }
 }
 
 fn write_period(state: &ChannelState, channel: usize, instrument: Instrument) {
-    let length_enabled = matches!(instrument, Instrument::Square { length: Some(_), .. });
+    let length_enabled = matches!(
+        instrument,
+        Instrument::Square {
+            length: Some(_),
+            ..
+        }
+    );
     match channel {
         0 => square::set_period(SquareChannel::One, effective_period(state), length_enabled),
         1 => square::set_period(SquareChannel::Two, effective_period(state), length_enabled),
@@ -795,16 +708,11 @@ fn write_period(state: &ChannelState, channel: usize, instrument: Instrument) {
     }
 }
 
-/// The `SOUND4CNT_H` polynomial byte for the channel's current noise pitch.
-/// Clamped rather than indexed raw: [`Track`] is public, so a hand-built one
-/// can hold a note outside the table.
 fn noise_poly(state: &ChannelState) -> u8 {
     let index = state.noise_note.clamp(1, NOISE_NOTE_MAX) - 1;
     NOISE_TABLE[index as usize]
 }
 
-/// NRx2 envelope byte with the channel's current volume in place of the
-/// instrument's initial volume.
 fn envelope_with_volume(envelope: &eb_agb_psg_interop::EnvelopeSpec, volume: u8) -> u16 {
     let mut spec = *envelope;
     spec.initial_volume = volume;

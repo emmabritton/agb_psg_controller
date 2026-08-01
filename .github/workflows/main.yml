@@ -1,4 +1,4 @@
-name: Rust
+name: Main
 
 on:
   push:
@@ -92,3 +92,31 @@ jobs:
         working-directory: eb_agb_psg_controller
         env:
           CRATES_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+
+  publish_gba:
+    if: startsWith(github.ref, 'refs/tags/v')
+    name: Publish GBA
+    needs: [ publish_controller ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: setup
+        run: |
+          cargo install agb-gbafix
+
+      - name: build
+        working-directory: eb_agb_psg_gba_tracker/game
+        run: cargo build --release ${{ matrix.mode.cargo_params }}
+
+      - name: build gba
+        run: agb-gbafix target/thumbv4t-none-eabi/release/game -o tracker_${{ github.ref_name }}.gba -tPSGTracker -cPSGT -mEB -r010
+
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: tracker_${{ github.ref_name }}.gba
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

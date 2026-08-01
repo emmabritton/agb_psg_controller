@@ -1,9 +1,9 @@
 [workspace]
 resolver = "3"
-members = ["eb_agb_psg_controller", "eb_agb_psg_macros", "eb_agb_psg_interop", "eb_agb_psg_format"]
+members = ["eb_agb_psg_controller", "eb_agb_psg_macros", "eb_agb_psg_interop", "eb_agb_psg_format", "eb_agb_psg_cli", "eb_agb_psg_gba_tracker/*"]
 
 [workspace.package]
-version = "0.25.0"
+version = "0.26.0"
 edition = "2024"
 authors = ["Emma Britton <emmabritton@pm.me>"]
 license-file = "LICENSE"
@@ -11,9 +11,30 @@ repository = "https://github.com/emmabritton/agb_psg_controller"
 readme = "README.md"
 
 [workspace.dependencies]
-agb_fixnum = "0.25.0"
-serde = { version = "1", features = ["derive"] }
+agb_fixnum = { version = "0.25.0", features = ["serde"] }
+arrayvec = { version = "0.7", default-features = false }
+serde = { version = "1.0", default-features = false, features = ["derive"]}
+serde-big-array = "0.5"
+log = { version = "0.4", default-features = false }
 ron = "0.12"
 quote = "1"
 proc-macro2 = "1"
 syn = { version = "2", default-features = false, features = ["parsing", "proc-macro", "printing"] }
+postcard = "1.1.3"
+
+[patch.crates-io]
+agb = { path = "../../third_party/agb/agb" }
+agb_fixnum = { path = "../../third_party/agb/agb-fixnum" }
+agb_save = { path = "../../third_party/agb/agb-save" }
+
+[profile.dev]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+debug = true
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+debug = false

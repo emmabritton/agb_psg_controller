@@ -1,0 +1,18 @@
+[package]
+name = "eb_agb_psg_cli"
+description = "CLI for AGB PSG Tracker .sav files: list, view, extract, insert and play SFX"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license-file.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+eb_agb_psg_controller = { path = "../eb_agb_psg_controller", features = ["host"] }
+eb_agb_psg_interop = { path = "../eb_agb_psg_interop", features = ["parse", "serde"] }
+agb_save = "0.25.0"
+serde.workspace = true
+clap = { version = "4", features = ["derive"] }
+rodio = { version = "0.20", default-features = false }
+hound = "3"

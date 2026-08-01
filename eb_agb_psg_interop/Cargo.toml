@@ -13,12 +13,14 @@ default = []
 std = []
 quote = ["dep:quote", "dep:proc-macro2", "std"]
 parse = ["dep:eb_agb_psg_format", "std"]
+serde = ["dep:serde"]
 
 [dependencies]
 agb_fixnum.workspace = true
-eb_agb_psg_format = { version = "0.25.0", path = "../eb_agb_psg_format", optional = true }
+eb_agb_psg_format = { version = "0.26.0", path = "../eb_agb_psg_format", optional = true }
 quote = { workspace = true, optional = true }
 proc-macro2 = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
 
 [dev-dependencies]
-eb_agb_psg_format = { version = "0.25.0", path = "../eb_agb_psg_format" }
+eb_agb_psg_format = { version = "0.26.0", path = "../eb_agb_psg_format" }
