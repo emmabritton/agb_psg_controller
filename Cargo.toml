@@ -3,7 +3,7 @@ resolver = "3"
 members = ["eb_agb_psg_controller", "eb_agb_psg_macros", "eb_agb_psg_interop", "eb_agb_psg_format", "eb_agb_psg_cli", "eb_agb_psg_gba_tracker/*"]
 
 [workspace.package]
-version = "0.26.0"
+version = "0.25.0"
 edition = "2024"
 authors = ["Emma Britton <emmabritton@pm.me>"]
 license-file = "LICENSE"
@@ -21,11 +21,6 @@ quote = "1"
 proc-macro2 = "1"
 syn = { version = "2", default-features = false, features = ["parsing", "proc-macro", "printing"] }
 postcard = "1.1.3"
-
-[patch.crates-io]
-agb = { path = "../../third_party/agb/agb" }
-agb_fixnum = { path = "../../third_party/agb/agb-fixnum" }
-agb_save = { path = "../../third_party/agb/agb-save" }
 
 [profile.dev]
 opt-level = 3

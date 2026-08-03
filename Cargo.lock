@@ -11,6 +11,8 @@ checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
 [[package]]
 name = "agb"
 version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f10a27a7be6227fdb6558086ac12b3302202b66ee9cf179f882e7f041e6258a4"
 dependencies = [
  "agb_fixnum",
  "agb_hashmap",
@@ -18,8 +20,7 @@ dependencies = [
  "agb_macros",
  "agb_save",
  "agb_sound_converter",
- "arbitrary-int",
- "bitbybit",
+ "bilge",
  "critical-section",
  "once_cell",
  "portable-atomic",
@@ -39,6 +40,8 @@ dependencies = [
 [[package]]
 name = "agb_fixnum"
 version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56a9e7207bfdcab85688c317f0582d70564a717b5c3a101728ab4bd4c1252c34"
 dependencies = [
  "const_soft_float",
  "num-traits",
@@ -50,6 +53,8 @@ dependencies = [
 [[package]]
 name = "agb_hashmap"
 version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14ec1be9c9856b0b23bd7c8b2123c88965ae64ee963ca90926be99c34b9cede6"
 dependencies = [
  "rustc-hash",
  "serde",
@@ -58,6 +63,8 @@ dependencies = [
 [[package]]
 name = "agb_image_converter"
 version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ad581ca4125ca246bf470912306704be0c927aa926602df5e9797bf8fccdbd3"
 dependencies = [
  "asefile",
  "fontdue",
@@ -74,6 +81,8 @@ dependencies = [
 [[package]]
 name = "agb_macros"
 version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "53fde29503bff075b2ff8ebc6c0080af62119c0a09ae88e021cad89653584e72"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -83,6 +92,8 @@ dependencies = [
 [[package]]
 name = "agb_save"
 version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8283d550338b6b9f9e5efe79ad17bc3891d66223c67b50ef4e02a4a58afa8b7"
 dependencies = [
  "crc16",
  "postcard",
@@ -92,6 +103,8 @@ dependencies = [
 [[package]]
 name = "agb_sound_converter"
 version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a16ba924c2d67cfd35fdee7cff31014bb9caa0a32ab935c72ed68eb36f83a1b6"
 dependencies = [
  "hound",
  "proc-macro2",
@@ -219,6 +232,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
+name = "bilge"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "279c74986684d5cc7bbbd079aa448e8f852992cd385d85bb3a37e374c087b065"
+dependencies = [
+ "arbitrary-int",
+ "bilge-impl",
+]
+
+[[package]]
+name = "bilge-impl"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1176e49f42fe135cd2b56465e4f7d07038d3728f5e9f27fb2f08ed3fef75339"
+dependencies = [
+ "itertools",
+ "proc-macro-error2",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
 name = "bindgen"
 version = "0.72.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -233,17 +269,6 @@ dependencies = [
  "regex",
  "rustc-hash",
  "shlex 1.3.0",
- "syn 2.0.119",
-]
-
-[[package]]
-name = "bitbybit"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71d2a3353d70ac1091a33cbf31fc7e77b19091538a7e306e3740712af19807ca"
-dependencies = [
- "proc-macro2",
- "quote",
  "syn 2.0.119",
 ]
 
@@ -485,7 +510,7 @@ checksum = "0c87e182de0887fd5361989c677c4e8f5000cd9491d6d563161a8f3a5519fc7f"
 
 [[package]]
 name = "eb_agb_psg_cli"
-version = "0.26.0"
+version = "0.25.0"
 dependencies = [
  "agb_save",
  "clap",
@@ -498,7 +523,7 @@ dependencies = [
 
 [[package]]
 name = "eb_agb_psg_controller"
-version = "0.26.0"
+version = "0.25.0"
 dependencies = [
  "agb",
  "agb_fixnum",
@@ -508,7 +533,7 @@ dependencies = [
 
 [[package]]
 name = "eb_agb_psg_format"
-version = "0.26.0"
+version = "0.25.0"
 dependencies = [
  "ron",
  "serde",
@@ -516,7 +541,7 @@ dependencies = [
 
 [[package]]
 name = "eb_agb_psg_interop"
-version = "0.26.0"
+version = "0.25.0"
 dependencies = [
  "agb_fixnum",
  "eb_agb_psg_format",
@@ -527,7 +552,7 @@ dependencies = [
 
 [[package]]
 name = "eb_agb_psg_macros"
-version = "0.26.0"
+version = "0.25.0"
 dependencies = [
  "eb_agb_psg_interop",
  "quote",
@@ -625,7 +650,7 @@ dependencies = [
 
 [[package]]
 name = "game"
-version = "0.26.0"
+version = "0.25.0"
 dependencies = [
  "agb",
  "agb_eb_ext",
@@ -638,7 +663,9 @@ dependencies = [
 
 [[package]]
 name = "gba_agb_font_creation_internals"
-version = "0.26.0"
+version = "0.25.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ce5c13b44153b0791812280cb6f3d67f9ae2c6e57174c379a57972411dda847"
 dependencies = [
  "asefile",
  "image",
@@ -646,11 +673,15 @@ dependencies = [
 
 [[package]]
 name = "gba_agb_font_eb"
-version = "0.26.0"
+version = "0.25.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e6a42de41fc8d281681b0afa23212851b13af384967c319da69bcc15594126ee"
 
 [[package]]
 name = "gba_agb_font_loader"
-version = "0.26.0"
+version = "0.25.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c105befa1755d64969e874dedcf6d1827b24453a122fdb6780f274e46b7538b0"
 dependencies = [
  "gba_agb_font_creation_internals",
  "gba_agb_font_eb",
@@ -662,7 +693,9 @@ dependencies = [
 
 [[package]]
 name = "gba_agb_font_renderer"
-version = "0.26.0"
+version = "0.25.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6695ae6c3e8851285d8a6aa8b153842b7c718d796179f9ce1c3e8042be70c37a"
 dependencies = [
  "agb",
  "gba_agb_font_eb",
@@ -1073,6 +1106,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "proc-macro-error-attr2"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96de42df36bb9bba5542fe9f1a054b8cc87e172759a1868aa05c1f3acc89dfc5"
+dependencies = [
+ "proc-macro2",
+ "quote",
+]
+
+[[package]]
+name = "proc-macro-error2"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11ec05c52be0a07b08061f7dd003e7d7092e0472bc731b4af7bb1ef876109802"
+dependencies = [
+ "proc-macro-error-attr2",
+ "proc-macro2",
+ "quote",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.107"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1133,7 +1187,7 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 
 [[package]]
 name = "resources"
-version = "0.26.0"
+version = "0.25.0"
 dependencies = [
  "agb",
  "eb_agb_psg_controller",

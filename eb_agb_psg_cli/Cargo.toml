@@ -9,8 +9,8 @@ repository.workspace = true
 publish = false
 
 [dependencies]
-eb_agb_psg_controller = { path = "../eb_agb_psg_controller", features = ["host"] }
-eb_agb_psg_interop = { path = "../eb_agb_psg_interop", features = ["parse", "serde"] }
+eb_agb_psg_controller = { version = "0.25.0", path = "../eb_agb_psg_controller", features = ["host"] }
+eb_agb_psg_interop = { version = "0.25.0", path = "../eb_agb_psg_interop", features = ["parse", "serde"] }
 agb_save = "0.25.0"
 serde.workspace = true
 clap = { version = "4", features = ["derive"] }

@@ -8,9 +8,6 @@ on:
     branches:
       - main
 
-permissions:
-  contents: write
-
 env:
   CARGO_TERM_COLOR: always
 
@@ -20,53 +17,59 @@ jobs:
     runs-on: ubuntu-latest 
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: clippy, rustfmt
 
       - name: Install linux deps
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends pkg-config build-essential gcc-multilib libudev-dev libjack-jackd2-dev libjack-jackd2-0 libasound2-dev
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config build-essential gcc-multilib libudev-dev libjack-jackd2-dev libjack-jackd2-0 libasound2-dev
 
       - name: fmt
         run: cargo fmt --all -- --check
       - name: clippy
-        run: cargo clippy -p eb_agb_psg_cli -p eb_agb_psg_interop -p eb_agb_psg_format -p eb_agb_psg_macros --features eb_agb_psg_interop/parse,eb_agb_psg_interop/quote --all-targets
+        run: cargo clippy -p eb_agb_psg_cli -p eb_agb_psg_interop -p eb_agb_psg_format -p eb_agb_psg_macros --features eb_agb_psg_interop/parse,eb_agb_psg_interop/quote --all-targets -- -D warnings
       - name: test
         run: | 
           cargo test -p eb_agb_psg_interop --features parse,quote
           cargo test -p eb_agb_psg_format
           cargo test -p eb_agb_psg_macros
 
-#  publish_gba:
-#    if: startsWith(github.ref, 'refs/tags/beta')
-#    name: Publish GBA
-#    needs: [ check ]
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v6
-#      - uses: dtolnay/rust-toolchain@stable
-#        with:
-#          components: clippy, rustfmt
-#
-#      - name: setup
-#        run: |
-#          cargo install agb-gbafix
-#
-#      - name: build
-#        working-directory: eb_agb_psg_gba_tracker/game
-#        run: cargo build --release
-#
-#      - name: build gba
-#        run: agb-gbafix target/thumbv4t-none-eabi/release/game -o tracker_${{ github.ref_name }}.gba -tPSGTracker -cPSGT -mEB -r010
-#
-#      - uses: softprops/action-gh-release@v1
-#        with:
-#          files: tracker_${{ github.ref_name }}.gba
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  publish_gba:
+    if: startsWith(github.ref, 'refs/tags/beta')
+    name: Publish GBA
+    needs: [ check ]
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: setup
+        run: |
+          cargo install agb-gbafix
+
+      - name: build
+        working-directory: eb_agb_psg_gba_tracker/game
+        run: cargo build --release
+
+      - name: build gba
+        run: agb-gbafix target/thumbv4t-none-eabi/release/game -o tracker_${{ github.ref_name }}.gba -tPSGTracker -cPSGT -mEB -r010
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: tracker_${{ github.ref_name }}.gba
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish_cli:
     if: startsWith(github.ref, 'refs/tags/beta')
     name: Publish CLI
     needs: [ check ]
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -87,13 +90,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@nightly
         with:
-          components: clippy, rustfmt
+          components: rust-src
 
       - name: Install linux deps
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends pkg-config build-essential gcc-multilib libudev-dev libjack-jackd2-dev libjack-jackd2-0 libasound2-dev alsa
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config build-essential gcc-multilib libudev-dev libjack-jackd2-dev libjack-jackd2-0 libasound2-dev
 
       - name: build
         run: cargo build --release --target ${{ matrix.target }} --package eb_agb_psg_cli
@@ -113,7 +116,7 @@ jobs:
           mv eb_agb_psg_cli psg_cli
           tar czf ../../../${{ matrix.name }} psg_cli
           cd -
-      - uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v2
         with:
           files: ${{ matrix.name }}
         env:

@@ -14,5 +14,5 @@ publish = false
 
 [dependencies]
 agb = "0.25.0"
-eb_agb_psg_controller = { version = "0.26.0", path = "../../eb_agb_psg_controller", features = ["dynamic"] }
-gba_agb_font_renderer = {path="../../../agb_font_converter/gba_agb_font_renderer"}
+eb_agb_psg_controller = { version = "0.25.0", path = "../../eb_agb_psg_controller", features = ["dynamic"] }
+gba_agb_font_renderer = "0.25.1"

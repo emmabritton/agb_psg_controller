@@ -110,7 +110,7 @@ jobs:
 
       - name: build
         working-directory: eb_agb_psg_gba_tracker/game
-        run: cargo build --release ${{ matrix.mode.cargo_params }}
+        run: cargo build --release
 
       - name: build gba
         run: agb-gbafix target/thumbv4t-none-eabi/release/game -o tracker_${{ github.ref_name }}.gba -tPSGTracker -cPSGT -mEB -r010

@@ -12,6 +12,6 @@ publish = true
 proc-macro = true
 
 [dependencies]
-eb_agb_psg_interop = { version = "0.26.0", path = "../eb_agb_psg_interop", features = ["quote", "parse"] }
+eb_agb_psg_interop = { version = "0.25.0", path = "../eb_agb_psg_interop", features = ["quote", "parse"] }
 quote.workspace = true
 syn.workspace = true

@@ -17,8 +17,8 @@ agb = "0.25.0"
 serde.workspace = true
 arrayvec.workspace = true
 
-resources = {path="../resources"}
+resources = { path = "../resources" }
 
-eb_agb_psg_controller = { version = "0.26.0", path = "../../eb_agb_psg_controller",features = ["dynamic", "serde"]  }
-gba_agb_font_renderer = {path="../../../agb_font_converter/gba_agb_font_renderer"}
+eb_agb_psg_controller = { version = "0.25.0", path = "../../eb_agb_psg_controller", features = ["dynamic", "serde"] }
+gba_agb_font_renderer = "0.25.1"
 agb_eb_ext = "0.25.0"
