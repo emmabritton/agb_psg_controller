@@ -24,18 +24,10 @@ pub enum InputResult {
     Save,
     Edited,
     EditedTop,
-    EditedList {
-        list: ListId,
-        item: u8,
-    },
-    ListChanged {
-        list: ListId,
-        move_to: Option<u8>,
-    },
+    EditedList { list: ListId, item: u8 },
+    ListChanged { list: ListId, move_to: Option<u8> },
     EditedRow(u8),
-    RowsChanged {
-        move_to: Option<u8>,
-    },
+    RowsChanged { move_to: Option<u8> },
     Regen,
 }
 

@@ -1,4 +1,3 @@
-
 use crate::scenes::sfx_editor::common::keyboard::{Keyboard, KeyboardResult};
 use crate::scenes::sfx_editor::common::rows;
 use crate::scenes::sfx_editor::common::tooltip::{TooltipText, draw_tooltip};

@@ -23,7 +23,7 @@ pub enum Target<Z: Copy> {
 
 pub struct NavCtx<'a> {
     pub doc: &'a SfxDocument,
-    /// Whether the regen top-bar button exists 
+    /// Whether the regen top-bar button exists
     pub template: bool,
 }
 

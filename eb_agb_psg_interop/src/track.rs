@@ -57,7 +57,7 @@ pub struct Pattern {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PatternSlot {
     pub note: u8,
-    // 1 based index 
+    // 1 based index
     pub instrument: u8,
     pub effect: PsgEffect,
 }
@@ -78,10 +78,7 @@ pub enum PsgEffect {
     PortamentoUp(u8),
     PortamentoDown(u8),
     TonePortamento(u8),
-    Vibrato {
-        speed: u8,
-        depth: u8,
-    },
+    Vibrato { speed: u8, depth: u8 },
     VolumeSlide(i8),
     NoteCut(u8),
     NoteDelay(u8),
@@ -90,10 +87,7 @@ pub enum PsgEffect {
     SetTicksPerRow(u8),
     SetFramesPerTick(Num<u16, 4>),
     SetDuty(u8),
-    SetPan {
-        left: bool,
-        right: bool,
-    },
+    SetPan { left: bool, right: bool },
     SetVolume(u8),
 }
 

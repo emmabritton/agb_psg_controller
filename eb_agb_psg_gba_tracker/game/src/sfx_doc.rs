@@ -1,4 +1,4 @@
-use agb::fixnum::{num, Num};
+use agb::fixnum::{Num, num};
 use agb::rng::RandomNumberGenerator;
 use alloc::borrow::Cow;
 use alloc::vec;

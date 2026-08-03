@@ -1,4 +1,3 @@
-
 use crate::scenes::sfx_editor::common::layout::{ARROW_X_NUDGE, CELL_WIDTH, COL_STRIDE};
 use crate::scenes::sfx_editor::common::text::push_num;
 use crate::scenes::sfx_editor::common::tooltip::{BUTTONS_ARROW, TooltipText};
