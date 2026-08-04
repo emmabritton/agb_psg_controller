@@ -76,9 +76,9 @@ Controls are generally explained on screen, except for:
   - Down: Triangle
   - Right: Random
 
-[SFX Menu](https://raw.githubusercontent.com/emmabritton/agb_psg_controller/refs/heads/main/.github/ss_menu_sfx.png)
-[Square SFX](https://raw.githubusercontent.com/emmabritton/agb_psg_controller/refs/heads/main/.github/ss_sfx_square.png)
-[Wave SFX](https://raw.githubusercontent.com/emmabritton/agb_psg_controller/refs/heads/main/.github/ss_sfx_wave.png)
+![SFX Menu](https://raw.githubusercontent.com/emmabritton/agb_psg_controller/refs/heads/main/.github/ss_menu_sfx.png)
+![Square SFX](https://raw.githubusercontent.com/emmabritton/agb_psg_controller/refs/heads/main/.github/ss_sfx_square.png)
+![Wave SFX](https://raw.githubusercontent.com/emmabritton/agb_psg_controller/refs/heads/main/.github/ss_sfx_wave.png)
 
 ### Getting SFX from the tracker
 
